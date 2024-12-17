@@ -14,6 +14,5 @@ CMD ["/prometheus-exporter"]
 FROM debian:latest
 
 COPY --from=build /prometheus-exporter /prometheus-exporter
-COPY /dashboards /dashboards
 
 ENTRYPOINT ["/prometheus-exporter"]
