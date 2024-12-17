@@ -62,7 +62,7 @@ func CollectZWaveMetrics(logger *slog.Logger, config MosquittoConfig, wg *sync.W
 	}
 
 	logger.Info("subscribing to mqtt topics")
-	token = client.Subscribe("$SYS/#", byte(2), nil)
+	token = client.Subscribe("zwave/#", byte(2), nil)
 	if token.WaitTimeout(5*time.Second) && token.Error() != nil {
 		logger.Error("couldn't subscribe to mqtt topics", "error", token.Error())
 		return
