@@ -1,6 +1,6 @@
 # zwavejs-prometheus-exporter
 
-Simple project to export Mikrotik interface & lte metrics to Prometheus.
+Simple project to export ZWave metrics to Prometheus.
 
 Docker image: `sokolimedia/zwavejs-prometheus-exporter:latest`
 
