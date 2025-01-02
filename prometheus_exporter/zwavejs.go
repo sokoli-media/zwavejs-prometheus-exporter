@@ -16,7 +16,15 @@ type ZWaveLastActive struct {
 	Value int64 `json:"value"`
 }
 
+type FloatSensorReading struct {
+	Time  int64   `json:"time"`
+	Value float64 `json:"value"`
+}
+
 var zWaveNodeLastActive = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_node_last_active"}, []string{"node"})
+var zWaveSensorTemperature = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_sensor_temperature"}, []string{"sensor"})
+var zWaveSensorHumidity = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_sensor_humidity"}, []string{"sensor"})
+var zWaveSensorIlluminance = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_sensor_illuminance"}, []string{"sensor"})
 
 var zWaveLastUpdate = promauto.NewGauge(prometheus.GaugeOpts{Name: "zwave_last_update"})
 
@@ -31,6 +39,32 @@ func processZWaveMessage(logger *slog.Logger, topic string, payload string) erro
 		}
 
 		zWaveNodeLastActive.With(prometheus.Labels{"node": found[1]}).Set(float64(lastActive.Value) / 1000)
+	} else if found := regexp.MustCompile("^zwave/([^/]+)/sensor_multilevel/endpoint_0/([^/]+)$").FindStringSubmatch(topic); len(found) > 0 {
+		sensorReading := FloatSensorReading{}
+		err := json.Unmarshal([]byte(payload), &sensorReading)
+		if err != nil {
+			return err
+		}
+
+		var metric *prometheus.GaugeVec
+		switch found[2] {
+		case "Air_temperature":
+			metric = zWaveSensorTemperature
+		case "Humidity":
+			metric = zWaveSensorHumidity
+		case "Illuminance":
+			metric = zWaveSensorIlluminance
+		default:
+			logger.Info(
+				"unknown sensor_multilevel sensor reading",
+				"sensor", found[1],
+				"metric", found[2],
+				"value", sensorReading.Value,
+			)
+			return nil
+		}
+
+		metric.With(prometheus.Labels{"sensor": found[1]}).Set(sensorReading.Value)
 	}
 
 	zWaveLastUpdate.SetToCurrentTime()
