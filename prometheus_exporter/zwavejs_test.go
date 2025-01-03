@@ -132,3 +132,12 @@ func Test_ZWave_Aeotec_Meter_Current(t *testing.T) {
 
 	assert.Equal(t, 0.023, newValue)
 }
+
+func Test_ZWave_Aeotec_Meter_UnknownReading(t *testing.T) {
+	err := processZWaveMessage(
+		sLogForTesting,
+		"zwave/sowa_power_outlet/meter/endpoint_0/value/DOESNTEXIST",
+		"{\"time\":1735906855204,\"value\":0.023}",
+	)
+	require.NoError(t, err)
+}
