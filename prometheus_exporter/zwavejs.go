@@ -26,6 +26,11 @@ var zWaveSensorTemperature = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zw
 var zWaveSensorHumidity = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_sensor_humidity"}, []string{"sensor"})
 var zWaveSensorIlluminance = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_sensor_illuminance"}, []string{"sensor"})
 
+var zWaveMeterTotalConsumption = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_power_meter_total_consumption_kwh"}, []string{"meter"})
+var zWaveMeterPower = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_power_meter_power_watts"}, []string{"meter"})
+var zWaveMeterVoltage = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_power_meter_voltage_volts"}, []string{"meter"})
+var zWaveMeterCurrent = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_power_meter_current_amps"}, []string{"meter"})
+
 var zWaveLastUpdate = promauto.NewGauge(prometheus.GaugeOpts{Name: "zwave_last_update"})
 
 func processZWaveMessage(logger *slog.Logger, topic string, payload string) error {
@@ -65,6 +70,34 @@ func processZWaveMessage(logger *slog.Logger, topic string, payload string) erro
 		}
 
 		metric.With(prometheus.Labels{"sensor": found[1]}).Set(sensorReading.Value)
+	} else if found := regexp.MustCompile("^zwave/([^/]+)/meter/endpoint_0/value/([^/]+)$").FindStringSubmatch(topic); len(found) > 0 {
+		sensorReading := FloatSensorReading{}
+		err := json.Unmarshal([]byte(payload), &sensorReading)
+		if err != nil {
+			return err
+		}
+
+		var metric *prometheus.GaugeVec
+		switch found[2] {
+		case "65537":
+			metric = zWaveMeterTotalConsumption
+		case "66049":
+			metric = zWaveMeterPower
+		case "66561":
+			metric = zWaveMeterVoltage
+		case "66817":
+			metric = zWaveMeterCurrent
+		default:
+			logger.Info(
+				"unknown meter sensor reading",
+				"sensor", found[1],
+				"metric", found[2],
+				"value", sensorReading.Value,
+			)
+			return nil
+		}
+
+		metric.With(prometheus.Labels{"meter": found[1]}).Set(sensorReading.Value)
 	}
 
 	zWaveLastUpdate.SetToCurrentTime()

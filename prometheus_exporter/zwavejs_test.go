@@ -80,3 +80,64 @@ func Test_ZWave_Aeotec_MultiSensor7_UnknownSensorReading(t *testing.T) {
 	)
 	require.NoError(t, err)
 }
+
+func Test_ZWave_Aeotec_Meter_TotalConsumption(t *testing.T) {
+	err := processZWaveMessage(
+		sLogForTesting,
+		"zwave/sowa_power_outlet/meter/endpoint_0/value/65537",
+		"{\"time\":1735906852206,\"value\":1}",
+	)
+	require.NoError(t, err)
+
+	newValue := getGaugeVecValue(t, zWaveMeterTotalConsumption, []string{"sowa_power_outlet"})
+
+	assert.Equal(t, 1.0, newValue)
+}
+
+func Test_ZWave_Aeotec_Meter_Power(t *testing.T) {
+	err := processZWaveMessage(
+		sLogForTesting,
+		"zwave/sowa_power_outlet/meter/endpoint_0/value/66049",
+		"{\"time\":1735906853203,\"value\":3.395}",
+	)
+	require.NoError(t, err)
+
+	newValue := getGaugeVecValue(t, zWaveMeterPower, []string{"sowa_power_outlet"})
+
+	assert.Equal(t, 3.395, newValue)
+}
+
+func Test_ZWave_Aeotec_Meter_Voltage(t *testing.T) {
+	err := processZWaveMessage(
+		sLogForTesting,
+		"zwave/sowa_power_outlet/meter/endpoint_0/value/66561",
+		"{\"time\":1735906854203,\"value\":240.71}",
+	)
+	require.NoError(t, err)
+
+	newValue := getGaugeVecValue(t, zWaveMeterVoltage, []string{"sowa_power_outlet"})
+
+	assert.Equal(t, 240.71, newValue)
+}
+
+func Test_ZWave_Aeotec_Meter_Current(t *testing.T) {
+	err := processZWaveMessage(
+		sLogForTesting,
+		"zwave/sowa_power_outlet/meter/endpoint_0/value/66817",
+		"{\"time\":1735906855204,\"value\":0.023}",
+	)
+	require.NoError(t, err)
+
+	newValue := getGaugeVecValue(t, zWaveMeterCurrent, []string{"sowa_power_outlet"})
+
+	assert.Equal(t, 0.023, newValue)
+}
+
+func Test_ZWave_Aeotec_Meter_UnknownReading(t *testing.T) {
+	err := processZWaveMessage(
+		sLogForTesting,
+		"zwave/sowa_power_outlet/meter/endpoint_0/value/DOESNTEXIST",
+		"{\"time\":1735906855204,\"value\":0.023}",
+	)
+	require.NoError(t, err)
+}
