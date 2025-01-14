@@ -102,6 +102,8 @@ func processZWaveMessage(logger *slog.Logger, topic string, payload string) erro
 		}
 
 		metric.With(prometheus.Labels{"meter": found[1], "endpoint": endpoint}).Set(sensorReading.Value)
+	} else {
+		logger.Info("unknown topic", "topic", topic)
 	}
 
 	zWaveLastUpdate.SetToCurrentTime()
