@@ -2,6 +2,7 @@ package prometheus_exporter
 
 import (
 	"encoding/json"
+	"fmt"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -26,10 +27,10 @@ var zWaveSensorTemperature = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zw
 var zWaveSensorHumidity = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_sensor_humidity"}, []string{"sensor"})
 var zWaveSensorIlluminance = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_sensor_illuminance"}, []string{"sensor"})
 
-var zWaveMeterTotalConsumption = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_power_meter_total_consumption_kwh"}, []string{"meter"})
-var zWaveMeterPower = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_power_meter_power_watts"}, []string{"meter"})
-var zWaveMeterVoltage = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_power_meter_voltage_volts"}, []string{"meter"})
-var zWaveMeterCurrent = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_power_meter_current_amps"}, []string{"meter"})
+var zWaveMeterTotalConsumption = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_power_meter_total_consumption_kwh"}, []string{"meter", "endpoint"})
+var zWaveMeterPower = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_power_meter_power_watts"}, []string{"meter", "endpoint"})
+var zWaveMeterVoltage = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_power_meter_voltage_volts"}, []string{"meter", "endpoint"})
+var zWaveMeterCurrent = promauto.NewGaugeVec(prometheus.GaugeOpts{Name: "zwave_power_meter_current_amps"}, []string{"meter", "endpoint"})
 
 var zWaveLastUpdate = promauto.NewGauge(prometheus.GaugeOpts{Name: "zwave_last_update"})
 
@@ -70,15 +71,17 @@ func processZWaveMessage(logger *slog.Logger, topic string, payload string) erro
 		}
 
 		metric.With(prometheus.Labels{"sensor": found[1]}).Set(sensorReading.Value)
-	} else if found := regexp.MustCompile("^zwave/([^/]+)/meter/endpoint_0/value/([^/]+)$").FindStringSubmatch(topic); len(found) > 0 {
+	} else if found := regexp.MustCompile("^zwave/([^/]+)/meter/endpoint_([0-9]+)/value/([^/]+)$").FindStringSubmatch(topic); len(found) > 0 {
 		sensorReading := FloatSensorReading{}
 		err := json.Unmarshal([]byte(payload), &sensorReading)
 		if err != nil {
 			return err
 		}
 
+		endpoint := fmt.Sprintf("endpoint_%s", found[2])
+
 		var metric *prometheus.GaugeVec
-		switch found[2] {
+		switch found[3] {
 		case "65537":
 			metric = zWaveMeterTotalConsumption
 		case "66049":
@@ -92,12 +95,13 @@ func processZWaveMessage(logger *slog.Logger, topic string, payload string) erro
 				"unknown meter sensor reading",
 				"sensor", found[1],
 				"metric", found[2],
+				"endpoint", endpoint,
 				"value", sensorReading.Value,
 			)
 			return nil
 		}
 
-		metric.With(prometheus.Labels{"meter": found[1]}).Set(sensorReading.Value)
+		metric.With(prometheus.Labels{"meter": found[1], "endpoint": endpoint}).Set(sensorReading.Value)
 	}
 
 	zWaveLastUpdate.SetToCurrentTime()

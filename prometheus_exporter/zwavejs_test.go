@@ -89,7 +89,20 @@ func Test_ZWave_Aeotec_Meter_TotalConsumption(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	newValue := getGaugeVecValue(t, zWaveMeterTotalConsumption, []string{"sowa_power_outlet"})
+	newValue := getGaugeVecValue(t, zWaveMeterTotalConsumption, []string{"sowa_power_outlet", "endpoint_0"})
+
+	assert.Equal(t, 1.0, newValue)
+}
+
+func Test_ZWave_Aeotec_Meter_DifferentEndpoint(t *testing.T) {
+	err := processZWaveMessage(
+		sLogForTesting,
+		"zwave/sowa_power_outlet/meter/endpoint_1/value/65537",
+		"{\"time\":1735906852206,\"value\":1}",
+	)
+	require.NoError(t, err)
+
+	newValue := getGaugeVecValue(t, zWaveMeterTotalConsumption, []string{"sowa_power_outlet", "endpoint_1"})
 
 	assert.Equal(t, 1.0, newValue)
 }
@@ -102,7 +115,7 @@ func Test_ZWave_Aeotec_Meter_Power(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	newValue := getGaugeVecValue(t, zWaveMeterPower, []string{"sowa_power_outlet"})
+	newValue := getGaugeVecValue(t, zWaveMeterPower, []string{"sowa_power_outlet", "endpoint_0"})
 
 	assert.Equal(t, 3.395, newValue)
 }
@@ -115,7 +128,7 @@ func Test_ZWave_Aeotec_Meter_Voltage(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	newValue := getGaugeVecValue(t, zWaveMeterVoltage, []string{"sowa_power_outlet"})
+	newValue := getGaugeVecValue(t, zWaveMeterVoltage, []string{"sowa_power_outlet", "endpoint_0"})
 
 	assert.Equal(t, 240.71, newValue)
 }
@@ -128,7 +141,7 @@ func Test_ZWave_Aeotec_Meter_Current(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	newValue := getGaugeVecValue(t, zWaveMeterCurrent, []string{"sowa_power_outlet"})
+	newValue := getGaugeVecValue(t, zWaveMeterCurrent, []string{"sowa_power_outlet", "endpoint_0"})
 
 	assert.Equal(t, 0.023, newValue)
 }
